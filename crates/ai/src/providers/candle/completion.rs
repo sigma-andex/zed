@@ -6,9 +6,8 @@ use crate::{
     auth::{CredentialProvider, ProviderCredential},
     completion::CompletionProvider,
     models::TruncationDirection,
-    providers::open_ai::OpenAiResponseStreamEvent,
 };
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use futures::{future::BoxFuture, stream, FutureExt, Stream, StreamExt};
 use gpui::BackgroundExecutor;
 use util::ResultExt;
@@ -123,7 +122,6 @@ async fn stream_completion(
     request: Box<dyn crate::completion::CompletionRequest>,
 ) -> Result<impl Stream<Item = Result<String>>> {
     let prompt = request.as_openai_request();
-    // let prompt = "def print_hello_world():".to_string();
 
     let (tx, rx) = futures::channel::mpsc::unbounded::<Result<String>>();
     let _text_generation = executor
@@ -132,6 +130,8 @@ async fn stream_completion(
 
             pl.run(tx, prompt, 128)?;
 
+            println!("Dropping mutex");
+            drop(pl);
             anyhow::Ok(())
         })
         .detach();

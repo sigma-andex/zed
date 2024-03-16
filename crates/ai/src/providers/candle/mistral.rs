@@ -61,12 +61,17 @@ impl TextGeneration {
             .map(|RequestMessage { content, role }| {
                 println!("{:?} {}", role, content);
                 match role {
-                    crate::providers::open_ai::Role::User => format!("<USER>{}</USER>", content),
+                    crate::providers::open_ai::Role::User => {
+                        println!("User!");
+                        format!("[INST]{}[/INST]", content)
+                    }
                     crate::providers::open_ai::Role::Assistant => {
-                        format!("<ASSISTANT>{}</ASSISTANT>", content)
+                        println!("Assistant!");
+                        format!("{}", content)
                     }
                     crate::providers::open_ai::Role::System => {
-                        format!("<SYSTEM>{}</SYSTEM>", content)
+                        println!("System!");
+                        format!("<s>{}</s>", content)
                     }
                 }
             })
@@ -137,6 +142,7 @@ impl TextGeneration {
                 std::io::stdout().flush()?;
             }
         }
+        sender.close_channel();
         let dt = start_gen.elapsed();
         if let Some(rest) = self.tokenizer.decode_rest().map_err(E::msg)? {
             print!("{rest}");
