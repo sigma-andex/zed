@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
-use super::starcoder2;
-use super::starcoder2::TextGeneration;
+use super::mistral;
+use super::mistral::TextGeneration;
 use crate::{
     auth::{CredentialProvider, ProviderCredential},
     completion::CompletionProvider,
@@ -20,8 +20,8 @@ pub struct CandleAiLanguageModel {
 impl CandleAiLanguageModel {
     pub fn load(model_name: &str) -> anyhow::Result<Self> {
         let seed = rand::random();
-        let model_id = "bigcode/starcoder2-3b";
-        let args = starcoder2::ModelArgs::new(
+        let model_id = "lmz/candle-mistral";
+        let args = mistral::ModelArgs::new(
             false,
             Some(0.7),
             None,
@@ -30,11 +30,10 @@ impl CandleAiLanguageModel {
             "main".to_string(),
             None,
             None,
-            None,
             1.1,
             64,
         );
-        let pipeline = Arc::new(Mutex::new(starcoder2::load_model(args)?));
+        let pipeline = Arc::new(Mutex::new(mistral::load_model(args)?));
         Ok(Self { pipeline })
     }
 }
