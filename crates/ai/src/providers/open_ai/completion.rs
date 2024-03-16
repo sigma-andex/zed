@@ -52,13 +52,13 @@ impl Display for Role {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Clone, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct RequestMessage {
     pub role: Role,
     pub content: String,
 }
 
-#[derive(Debug, Default, Serialize)]
+#[derive(Clone, Debug, Default, Serialize)]
 pub struct OpenAiRequest {
     pub model: String,
     pub messages: Vec<RequestMessage>,
@@ -70,6 +70,12 @@ pub struct OpenAiRequest {
 impl CompletionRequest for OpenAiRequest {
     fn data(&self) -> serde_json::Result<String> {
         serde_json::to_string(self)
+    }
+
+    // [TODO] This should be refactored and the OpenAi model moved to the top-level
+    // as it is a standard nowadays.
+    fn as_openai_request(&self) -> crate::providers::open_ai::OpenAiRequest {
+        (self).clone()
     }
 }
 
@@ -248,6 +254,7 @@ pub enum OpenAiCompletionProviderKind {
         deployment_id: String,
         api_version: AzureOpenAiApiVersion,
     },
+    Candle,
 }
 
 impl OpenAiCompletionProviderKind {
@@ -265,6 +272,9 @@ impl OpenAiCompletionProviderKind {
                 // https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#chat-completions
                 format!("{api_url}/openai/deployments/{deployment_id}/chat/completions?api-version={api_version}")
             }
+            Self::Candle => {
+                format!("Sorry, no endpoint here. Running in memory 🚀")
+            }
         }
     }
 
@@ -273,6 +283,7 @@ impl OpenAiCompletionProviderKind {
         match self {
             Self::OpenAi => ("Authorization", format!("Bearer {api_key}")),
             Self::AzureOpenAi { .. } => ("Api-Key", api_key),
+            Self::Candle => ("Authorization", format!("No key")),
         }
     }
 }
@@ -402,14 +413,13 @@ impl CompletionProvider for OpenAiCompletionProvider {
         let request = stream_completion(api_url, kind, credential, self.executor.clone(), prompt);
         async move {
             let response = request.await?;
-            let stream = response
-                .filter_map(|response| async move {
-                    match response {
-                        Ok(mut response) => Some(Ok(response.choices.pop()?.delta.content?)),
-                        Err(error) => Some(Err(error)),
-                    }
-                })
-                .boxed();
+            let filter_map = response.filter_map(|response| async move {
+                match response {
+                    Ok(mut response) => Some(Ok(response.choices.pop()?.delta.content?)),
+                    Err(error) => Some(Err(error)),
+                }
+            });
+            let stream = filter_map.boxed();
             Ok(stream)
         }
         .boxed()

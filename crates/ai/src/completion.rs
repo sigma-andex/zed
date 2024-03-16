@@ -5,6 +5,7 @@ use crate::{auth::CredentialProvider, models::LanguageModel};
 
 pub trait CompletionRequest: Send + Sync {
     fn data(&self) -> serde_json::Result<String>;
+    fn as_openai_request(&self) -> crate::providers::open_ai::OpenAiRequest;
 }
 
 pub trait CompletionProvider: CredentialProvider {

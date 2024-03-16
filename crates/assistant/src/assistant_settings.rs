@@ -90,6 +90,7 @@ impl AssistantSettings {
                     api_version,
                 })
             }
+            AiProviderSettings::Candle => Ok(OpenAiCompletionProviderKind::Candle),
         }
     }
 
@@ -103,6 +104,7 @@ impl AssistantSettings {
                 .api_url
                 .clone()
                 .ok_or_else(|| anyhow!("no Azure OpenAI API URL")),
+            AiProviderSettings::Candle => Ok(format!("no Candle OpenAI API URL")),
         }
     }
 
@@ -129,6 +131,7 @@ impl AssistantSettings {
                     )),
                 }
             }
+            AiProviderSettings::Candle => Ok(OpenAiModel::FourTurbo),
         }
     }
 
@@ -143,6 +146,7 @@ impl AssistantSettings {
                 .deployment_id
                 .clone()
                 .ok_or_else(|| anyhow!("no Azure OpenAI deployment ID")),
+            AiProviderSettings::Candle => Ok("No candle settings".to_string()),
         }
     }
 }
@@ -206,6 +210,8 @@ pub enum AiProviderSettings {
     /// The settings for the Azure OpenAI provider.
     #[serde(rename = "azure_openai")]
     AzureOpenAi(AzureOpenAiProviderSettings),
+    #[serde(rename = "candle")]
+    Candle,
 }
 
 /// The settings for the AI provider used by the Zed Assistant.
@@ -218,6 +224,8 @@ pub enum AiProviderSettingsContent {
     /// The settings for the Azure OpenAI provider.
     #[serde(rename = "azure_openai")]
     AzureOpenAi(AzureOpenAiProviderSettingsContent),
+    #[serde(rename = "candle")]
+    Candle,
 }
 
 impl Default for AiProviderSettingsContent {

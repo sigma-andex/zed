@@ -6,7 +6,6 @@ use crate::{
     NewConversation, QuoteSelection, ResetKey, Role, SavedConversation, SavedConversationMetadata,
     SavedMessage, Split, ToggleFocus, ToggleIncludeConversation, ToggleRetrieveContext,
 };
-use ai::prompts::repository_context::PromptCodeSnippet;
 use ai::{
     auth::ProviderCredential,
     completion::{CompletionProvider, CompletionRequest},
@@ -14,6 +13,10 @@ use ai::{
         OpenAiCompletionProvider, OpenAiCompletionProviderKind, OpenAiRequest, RequestMessage,
         OPEN_AI_API_URL,
     },
+};
+use ai::{
+    prompts::repository_context::PromptCodeSnippet,
+    providers::candle::completion::CandleCompletionProvider,
 };
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Local};
@@ -133,13 +136,22 @@ impl AssistantPanel {
                 ))
             })??;
 
-            let completion_provider = OpenAiCompletionProvider::new(
-                api_url,
-                provider_kind,
-                model_name,
-                cx.background_executor().clone(),
-            )
-            .await;
+            let completion_provider: Arc<dyn CompletionProvider> = match provider_kind {
+                OpenAiCompletionProviderKind::Candle => Arc::new(
+                    CandleCompletionProvider::new(model_name, cx.background_executor().clone())
+                        .await?,
+                ),
+
+                _ => Arc::new(
+                    OpenAiCompletionProvider::new(
+                        api_url,
+                        provider_kind,
+                        model_name,
+                        cx.background_executor().clone(),
+                    )
+                    .await,
+                ),
+            };
 
             // TODO: deserialize state.
             let workspace_handle = workspace.clone();
@@ -188,7 +200,7 @@ impl AssistantPanel {
                         zoomed: false,
                         focus_handle,
                         toolbar,
-                        completion_provider: Arc::new(completion_provider),
+                        completion_provider,
                         api_key_editor: None,
                         languages: workspace.app_state().languages.clone(),
                         fs: workspace.app_state().fs.clone(),

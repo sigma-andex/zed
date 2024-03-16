@@ -96,7 +96,7 @@ members = [
     "extensions/gleam",
     "extensions/uiua",
 
-    "tooling/xtask",
+    "tooling/xtask", "candle-example",
 ]
 default-members = ["crates/zed"]
 resolver = "2"

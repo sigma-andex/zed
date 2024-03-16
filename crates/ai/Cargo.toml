@@ -19,8 +19,14 @@ test-support = []
 anyhow.workspace = true
 async-trait.workspace = true
 bincode = "1.3.3"
+candle-core = { git = 'https://github.com/huggingface/candle', rev="cdc4c172c42b5c31b3063afd20cc7055d60f9af8", features = ["metal"] }
+candle-metal-kernels =  { git = 'https://github.com/huggingface/candle', rev="cdc4c172c42b5c31b3063afd20cc7055d60f9af8"}
+candle-nn = { git = 'https://github.com/huggingface/candle', rev="cdc4c172c42b5c31b3063afd20cc7055d60f9af8", features = ["metal"] }
+candle-transformers = { git = 'https://github.com/huggingface/candle', rev="cdc4c172c42b5c31b3063afd20cc7055d60f9af8", features = ["metal"] }
+derive-new = "0.6.0"
 futures.workspace = true
 gpui.workspace = true
+hf-hub = "0.3.2"
 isahc.workspace = true
 language.workspace = true
 log.workspace = true
@@ -35,6 +41,7 @@ schemars.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 tiktoken-rs.workspace = true
+tokenizers = { version = "0.15.2", features = ["http"] }
 util.workspace = true
 
 [dev-dependencies]
