@@ -58,21 +58,15 @@ impl TextGeneration {
         let prompt = request
             .messages
             .into_iter()
-            .map(|RequestMessage { content, role }| {
-                println!("{:?} {}", role, content);
-                match role {
-                    crate::providers::open_ai::Role::User => {
-                        println!("User!");
-                        format!("[INST]{}[/INST]", content)
-                    }
-                    crate::providers::open_ai::Role::Assistant => {
-                        println!("Assistant!");
-                        format!("{}", content)
-                    }
-                    crate::providers::open_ai::Role::System => {
-                        println!("System!");
-                        format!("<s>{}</s>", content)
-                    }
+            .map(|RequestMessage { content, role }| match role {
+                crate::providers::open_ai::Role::User => {
+                    format!("[INST]{}[/INST] ", content)
+                }
+                crate::providers::open_ai::Role::Assistant => {
+                    format!("{}", content)
+                }
+                crate::providers::open_ai::Role::System => {
+                    format!("<s>{}</s>", content)
                 }
             })
             .collect();
@@ -109,10 +103,14 @@ impl TextGeneration {
             None => anyhow::bail!("cannot find the </s> token"),
         };
         let start_gen = std::time::Instant::now();
+        println!("Starting to generate {} tokens...", sample_len);
         for index in 0..sample_len {
             let context_size = if index > 0 { 1 } else { tokens.len() };
             let start_pos = tokens.len().saturating_sub(context_size);
+
+            // [TODO] Why does it fail here in the second run???
             let ctxt = &tokens[start_pos..];
+
             let input = Tensor::new(ctxt, &self.device)?.unsqueeze(0)?;
             let logits = match &mut self.model {
                 Model::Mistral(m) => m.forward(&input, start_pos)?,
@@ -134,6 +132,7 @@ impl TextGeneration {
             tokens.push(next_token);
             generated_tokens += 1;
             if next_token == eos_token {
+                println!("Finished generation.");
                 break;
             }
             if let Some(t) = self.tokenizer.next_token(next_token)? {
@@ -142,7 +141,8 @@ impl TextGeneration {
                 std::io::stdout().flush()?;
             }
         }
-        sender.close_channel();
+        println!("Closing channel");
+        // sender.close_channel();
         let dt = start_gen.elapsed();
         if let Some(rest) = self.tokenizer.decode_rest().map_err(E::msg)? {
             print!("{rest}");

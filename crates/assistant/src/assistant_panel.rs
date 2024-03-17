@@ -1739,6 +1739,7 @@ impl Conversation {
         }
 
         if should_assist {
+            println!("Assistant called");
             if !self.completion_provider.has_credentials() {
                 log::info!("completion provider has no credentials");
                 return Default::default();
@@ -2013,6 +2014,7 @@ impl Conversation {
     }
 
     fn summarize(&mut self, cx: &mut ModelContext<Self>) {
+        println!("Summarize called");
         if self.message_anchors.len() >= 2 && self.summary.is_none() {
             if !self.completion_provider.has_credentials() {
                 return;

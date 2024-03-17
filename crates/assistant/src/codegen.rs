@@ -382,6 +382,10 @@ mod tests {
         fn data(&self) -> serde_json::Result<String> {
             serde_json::to_string(self)
         }
+
+        fn as_openai_request(&self) -> ai::providers::open_ai::OpenAiRequest {
+            todo!("Not yet implemented")
+        }
     }
 
     #[gpui::test(iterations = 10)]

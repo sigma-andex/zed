@@ -22,7 +22,7 @@ impl CandleAiLanguageModel {
         let model_id = "lmz/candle-mistral";
         let args = mistral::ModelArgs::new(
             false,
-            Some(0.7),
+            Some(0.5),
             None,
             seed,
             Some(model_id.to_string()),
@@ -129,8 +129,6 @@ async fn stream_completion(
             let mut pl = pipeline.lock().unwrap();
 
             pl.run(tx, prompt, 128)?;
-
-            println!("Dropping mutex");
             drop(pl);
             anyhow::Ok(())
         })
