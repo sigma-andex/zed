@@ -108,14 +108,17 @@ impl TextGeneration {
             let context_size = if index > 0 { 1 } else { tokens.len() };
             let start_pos = tokens.len().saturating_sub(context_size);
 
-            // [TODO] Why does it fail here in the second run???
-            let ctxt = &tokens[start_pos..];
+            let ctxt: &[u32] = &tokens.get(start_pos..).unwrap_or_else(|| {
+                println!("Index out of bounds");
+                panic!("Index out of bounds")
+            });
 
             let input = Tensor::new(ctxt, &self.device)?.unsqueeze(0)?;
             let logits = match &mut self.model {
                 Model::Mistral(m) => m.forward(&input, start_pos)?,
                 Model::Quantized(m) => m.forward(&input, start_pos)?,
             };
+
             let logits = logits.squeeze(0)?.squeeze(0)?.to_dtype(DType::F32)?;
             let logits = if self.repeat_penalty == 1. {
                 logits
@@ -141,8 +144,7 @@ impl TextGeneration {
                 std::io::stdout().flush()?;
             }
         }
-        println!("Closing channel");
-        // sender.close_channel();
+        sender.close_channel();
         let dt = start_gen.elapsed();
         if let Some(rest) = self.tokenizer.decode_rest().map_err(E::msg)? {
             print!("{rest}");
@@ -152,6 +154,20 @@ impl TextGeneration {
             "\n{generated_tokens} tokens generated ({:.2} token/s)",
             generated_tokens as f64 / dt.as_secs_f64(),
         );
+
+        // [TODO] Fix KV cache shape
+        print!("Clearing kv cache...");
+        match &mut self.model {
+            Model::Mistral(m) => {
+                m.clear_kv_cache();
+                ()
+            }
+            Model::Quantized(m) => {
+                m.clear_kv_cache();
+                ()
+            }
+        };
+        println!("done!");
         Ok(())
     }
 }

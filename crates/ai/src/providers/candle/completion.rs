@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    panic,
+    sync::{Arc, Mutex},
+};
 
 use super::mistral;
 use super::mistral::TextGeneration;
@@ -128,7 +131,13 @@ async fn stream_completion(
         .spawn(async move {
             let mut pl = pipeline.lock().unwrap();
 
-            pl.run(tx, prompt, 128)?;
+            let result = pl.run(tx, prompt, 128);
+            match result {
+                Ok(_) => {}
+                Err(err) => {
+                    println!("{:?}", err);
+                }
+            }
             drop(pl);
             anyhow::Ok(())
         })
